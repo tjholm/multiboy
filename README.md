@@ -2,13 +2,13 @@
 
 A multiplayer gameboy powered by WebRTC and [Nitric](https://nitric.io/).
 
-> The emulator used in this project was not authored by me and is located [here](https://github.com/roblouie/gameboy-emulator). Have made minor tweaks to it to allow streaming audio.
+> The emulator used in this project was not authored by me and is located [here](https://github.com/roblouie/gameboy-emulator). Have made minor tweaks to it for streaming audio.
 
 Demo available [here](https://multiboy.nitric.rocks)
 
 > Apologies if the demo is down, if you're interested in trying it out let me know in issues or you can also run it on your local machine or deploy it to your own AWS account.
 
-NOTE: All WebRTC communication is Peer to peer with no relays (TURN servers), and is implemented in a hub and spoke mode. If you have any issues connecting to a peer it is likely that a TURN server will be required.
+NOTE: All WebRTC communication is Peer to peer with no relays (TURN servers). If you have any issues connecting to a peer it is likely that a TURN server will be required.
 
 ## Game Modes
 
@@ -37,7 +37,7 @@ To run the project locally you can simply run `yarn dev`. If you have any issues
 ## Deployment
 
 ### Requirements
-    - Pulumi
+  - Pulumi
 
 If you have AWS credentials and Pulumi configured on your machine, you should simply be able to run `yarn deploy`.
 
@@ -51,4 +51,4 @@ The application backend consists of a simple API for managing assets and creatin
 
 Code for defining the backend is found [here](src/backend/)
 
-Code for deploying it to AWS can be found [here](https://github.com/nitrictech/nitric/tree/develop/cloud/aws)
+Code for AWS deployment can be found [here](https://github.com/nitrictech/nitric/tree/develop/cloud/aws)
