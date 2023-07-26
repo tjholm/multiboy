@@ -68,12 +68,16 @@ signal.on('disconnect', async (ctx) => {
         });
 
         await streamPromise;
+
+        // delete the game
+        console.log('disconnecting host');
+        await gamesdb.doc(document.id).delete();
         
         return ctx;
     }
 
     // remove the client from the client connection pool
-    console.log('disconnecting client');
+    console.log('disconnecting guest');
     await gamesdb.doc(`connection|${ctx.req.connectionId}`).delete();
 });
 
