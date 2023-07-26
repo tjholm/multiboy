@@ -1,0 +1,8 @@
+name: test-aws
+provider: nitric/aws@0.32.0
+region: us-east-1
+config:
+  default:
+    lambda:
+      timeout: 30
+      memory: 512

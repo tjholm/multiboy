@@ -1,0 +1,27 @@
+---
+---
+
+<!-- Screen layout for the gameboy display -->
+<style>
+  div.game-container {
+    position: relative;
+    margin: auto;
+    max-width: 640px;
+  }
+
+  div.screen-border {
+    padding: 64px;
+    max-width: 640px;
+    background-color: #272929;
+  }
+</style>
+
+<div class="game-container w-full flex flex-col gap-8 items-center">
+  <div class="w-full flex justify-between">
+    <slot name="controls" />
+  </div>
+  <div class="screen-border flex flex-col rounded w-full">
+    <slot />
+  </div>
+  <slot name="footer" />
+</div>

@@ -1,0 +1,6 @@
+name: nitric-gameboy-ws
+handlers:
+  - src/backend/*.ts
+preview-features:
+  - websockets
+  - http

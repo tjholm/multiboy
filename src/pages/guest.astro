@@ -1,0 +1,110 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Screen from "../components/Screen.astro";
+import Controls from "../components/Controls";
+import Countdown from "../components/Countdown";
+---
+
+<style>
+  video[data-video] {
+    image-rendering: optimizeSpeed; /* Older versions of FF          */
+    image-rendering: -moz-crisp-edges; /* FF 6.0+                       */
+    image-rendering: -webkit-optimize-contrast; /* Safari                        */
+    image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
+    image-rendering: pixelated; /* Awesome future-browsers       */
+    -ms-interpolation-mode: nearest-neighbor; /* IE */
+    aspect-ratio: 10 / 9;
+    background-color: #c4bebb;
+  }
+
+  div[slot="controls"] {
+    display: flex;
+  }
+</style>
+
+<Layout title="MultiBoy Guest">
+  <Screen>
+    <input slot="controls" type="button" value="Toggle Audio" onclick="toggleAudio();" />
+    <video class="w-full" data-video autoplay width="160" height="144"></video>
+    <div class="flex flex-col gap-4" slot="footer">
+      <Controls client:load />
+      <Countdown client:load />
+    </div>
+  </Screen>
+  <input type="button" value="Not seeing video? Click here" onclick="playVideo();" />
+</Layout>
+
+<script>
+  import km from "../lib/input-manager";
+  import Spoke from "../lib/spoke";
+import { countdown } from "../stores/countdown";
+  import { gameState } from '../stores/game';
+  import { you } from '../stores/you';
+
+  const remoteVideo = document.querySelector(
+    "[data-video]"
+  ) as HTMLVideoElement;
+  const gameMode = document.getElementById("gameMode") as HTMLVideoElement;
+
+  // @ts-ignore
+  window.playVideo = () => {
+    remoteVideo.play();
+  };
+
+  // @ts-ignore
+  window.toggleAudio = () => {
+    remoteVideo.muted = !remoteVideo.muted;
+  };
+
+  (async function () {
+    // TODO: Return in game fetch?
+    const addressResp = await fetch("/address");
+    const address = await addressResp.text();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameName = urlParams.get("game");
+    const token = urlParams.get("token");
+
+    // connect the websocket as a game guest
+    const websocket = new WebSocket(
+      `${address}?game=${gameName}&token=${token}`
+    );
+
+    await new Promise((res) => {
+      websocket.addEventListener("open", res);
+    });
+
+    const spoke = new Spoke(websocket);
+    let mediaStream: MediaStream = null;
+
+    spoke.onMediaSource((stream) => {
+      if (mediaStream) {
+        mediaStream.addTrack(stream.getTracks()[0])
+      } else {
+        mediaStream = stream;
+      }
+      remoteVideo.srcObject = mediaStream;
+    });
+
+    // handle a host message
+    spoke.onMessage((e) => {
+      switch (e.type) {
+        case "game":
+          const { you: me, forSeconds, ...state } = e.state;
+          console.log(`got: ${forSeconds}`);
+
+          // smokey the bear says only who can stop forest fires?
+          you.set(me);
+          countdown.set(forSeconds);
+          gameState.set(state);
+          console.log('got an update', state);
+      }
+    });
+
+    await spoke.start();
+
+    km.onChange(() => {
+      spoke.send(km.input);
+    });
+  })();
+</script>

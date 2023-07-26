@@ -1,0 +1,231 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Screen from "../components/Screen.astro";
+import Controls from "../components/Controls";
+import Countdown from "../components/Countdown";
+---
+
+<style>
+  canvas[data-game-canvas] {
+    image-rendering: optimizeSpeed; /* Older versions of FF          */
+    image-rendering: -moz-crisp-edges; /* FF 6.0+                       */
+    image-rendering: -webkit-optimize-contrast; /* Safari                        */
+    image-rendering: -o-crisp-edges; /* OS X & Windows Opera (12.02+) */
+    image-rendering: pixelated; /* Awesome future-browsers       */
+    -ms-interpolation-mode: nearest-neighbor; /* IE                            */
+
+    background-color: #c4bebb;
+  }
+
+  div[slot="controls"] {
+    display: flex;
+  }
+</style>
+
+<Layout title="MultiBoy Host">
+  <Screen>
+    <input slot="controls" type="file" data-file-input style="display: none;" />
+    <button slot="controls" data-guest-url>Copy Guest Link</button>
+    <input
+      slot="controls"
+      type="button"
+      value="Load Rom"
+      onclick="
+      document.querySelector('[data-file-input]').click();
+      "
+    />
+    <canvas data-game-canvas class="w-full flex" width="160" height="144"
+    ></canvas>
+    <div class="flex flex-col gap-4" slot="footer">
+      <Controls client:load />
+      <Countdown client:load />
+    </div>
+  </Screen>
+</Layout>
+
+<script>
+  import { gameState, DEFAULT_STATES, CONTROL_KEYS } from "../stores/game";
+  import { strategy, Input } from '../stores/strategy';
+  import { you } from '../stores/you';
+  import { countdown } from '../stores/countdown';
+  import { Gameboy } from "@tholm/gameboy-emulator";
+  import km from "../lib/input-manager";
+  import Hub from "../lib/hub";
+  import localforage from "localforage";
+  import { fileToArrayBuffer, shuffle } from '../lib/utils';
+
+  const canvas = document.querySelector(
+    "[data-game-canvas]"
+  ) as HTMLCanvasElement;
+  const context = canvas.getContext("2d")!;
+  const guestUrl = document.querySelector(
+    "[data-guest-url]"
+  ) as HTMLButtonElement;
+  const fileInput = document.querySelector(
+    "[data-file-input]"
+  ) as HTMLInputElement;
+  // bind to websocket with host token
+  const gameboy = new Gameboy();
+
+  (async function () {
+    const game = await fetch("/game");
+    const addressResp = await fetch("/address");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameMode = urlParams.get("mode") || "chaos";
+    // Look at me!!! I am the captain now!!!
+    you.set('host');
+
+    // establish the initial game type, if mode is invalid then will use configued default
+    gameState.set(DEFAULT_STATES[gameMode] || DEFAULT_STATES.default);
+
+    const address = await addressResp.text();
+    const resp = await game.json();
+
+    // connect the websocket as the game host
+    const websocket = new WebSocket(
+      `${address}?game=${resp.name}&token=${resp.hostToken}`
+    );
+
+    // disable gameboy keyboard manager
+    ['down', 'up', 'left', 'right', 'a', 'b', 'start', 'select'].forEach(k => {
+      gameboy.keyboardManager[k] = "";
+    });
+
+    const destinationStream =
+      gameboy.apu.audioContext.createMediaStreamDestination();
+    await gameboy.apu.connect(destinationStream);
+
+    const hub = new Hub(
+      websocket,
+      context.canvas.captureStream(30),
+      destinationStream
+    );
+
+    let inputState = {};
+    hub.onMessage((connectionId, e) => {
+      const data = JSON.parse(e.data);
+      inputState[connectionId] = data;
+    });
+
+    setInterval(() => {
+      const gs = gameState.get();
+      switch (gs.mode) {
+        // every 60 seconds set who is in control
+        case 'hotseat':
+          // change the controlling player
+          const players = hub.players;
+          const playerIdx = players.indexOf(gs.controllingPlayer) || 0;
+
+          gameState.setKey('controllingPlayer', players[(playerIdx + 1) % players.length])
+          break;
+        case 'shuffle':
+          // shuffle controls amongst active players
+          const allButtons = shuffle(CONTROL_KEYS);
+          const allPlayers = shuffle(hub.players);
+          const inputMap = allPlayers.reduce((acc, player) => {
+            return {
+              ...acc,
+              [player]: [],
+            };
+          }, {} as Record<string, (keyof Input)[]> )
+
+          let playerIx = 0;
+
+          while (allButtons.length > 0) {
+            inputMap[allPlayers[playerIx % (allPlayers.length)]].push(allButtons.pop());
+
+            playerIx = playerIx + 1;
+          }
+
+          countdown.set(60);
+          gameState.set({
+            mode: 'shuffle',
+            inputMap,
+          });
+      }
+    }, 60000);
+
+    hub.onConnection((connectionId) => {
+
+      console.log(`sending: ${countdown.get()}`);
+      // let the guest know the current game state
+      // also let the guest know their connection Id
+      hub.send(connectionId, {
+        type: "game",
+        state: {
+          ...gameState.value,
+          forSeconds: countdown.get(),
+          you: connectionId,
+        },
+      });
+    });
+
+    // update the players on game state changes
+    gameState.listen((val) => {
+      // @ts-ignore
+      hub.guests.forEach((p) => {
+        hub.send(p, {
+          type: "game",
+          state: {
+            ...val,
+            you: p,
+            forSeconds: countdown.get(),
+          },
+        });
+      });
+    });
+
+    hub.start();
+
+    guestUrl.addEventListener("click", () => {
+      navigator.clipboard.writeText(
+        `${window.location.protocol}//${window.location.host}/guest?game=${resp.name}&token=${resp.guestToken}`
+      );
+    });
+
+    fileInput.addEventListener("change", onFileChange);
+
+    setInterval(() => {
+      const newInputs = strategy.get()({ host: km.input, ...inputState });
+
+      // apply the held buttons to the emulator
+      Object.entries(newInputs).forEach(([k, v]) => {
+        gameboy.input[k] = v;
+      });
+    }, 10);
+
+    async function onFileChange(event) {
+      // @ts-ignore
+      if (fileInput.files && fileInput.files[0]) {
+        // @ts-ignore
+        const rom = await fileToArrayBuffer(fileInput.files[0]);
+        // @ts-ignore
+        gameboy.loadGame(rom);
+
+        gameboy.setOnWriteToCartridgeRam(() => {
+          localforage.setItem(
+            gameboy.cartridge!.title,
+            gameboy.getCartridgeSaveRam()
+          );
+        });
+
+        // reload SRAM if in local storage
+        const sram = (await localforage.getItem(
+          gameboy.cartridge!.title
+        )) as ArrayBuffer;
+        if (sram) {
+          gameboy.setCartridgeSaveRam(sram);
+        }
+
+        gameboy.apu.enableSound();
+
+        gameboy.onFrameFinished((imageData) => {
+          context.putImageData(imageData, 0, 0);
+        });
+
+        gameboy.run(); // Run the game
+      }
+    }
+  })();
+</script>
