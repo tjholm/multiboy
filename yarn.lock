@@ -673,10 +673,10 @@
   resolved "https://registry.yarnpkg.com/@nanostores/react/-/react-0.7.1.tgz#e0446f5cacc9fa53448c454f5d00ddb0f906a37a"
   integrity sha512-EXQg9N4MdI4eJQz/AZLIx3hxQ6BuBmV4Q55bCd5YCSgEOAW7tGTsIZxpRXxvxLXzflNvHTBvfrDNY38TlSVBkQ==
 
-"@nitric/sdk@v0.15.0-rc.5":
-  version "0.15.0-rc.5"
-  resolved "https://registry.yarnpkg.com/@nitric/sdk/-/sdk-0.15.0-rc.5.tgz#a04e682bffec194b6df9af63db292ef7918c534e"
-  integrity sha512-9cUvgfKRCITzou8yQNZxmTJ7A3Bq3BOb3SzudyfawN67GETiePEw0k4xNOoCAPM8h+3HDBXLz/ays2H4URfbLw==
+"@nitric/sdk@v0.15.0":
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/@nitric/sdk/-/sdk-0.15.0.tgz#e045cfe9f317ecea72361220b300724ccb34f51b"
+  integrity sha512-PIrE9hyQs7nfLYZHLwyvRaXNDROtsAprBtfYzMWBNHB94euVjvV1Ug4MRSCfR3pvzAUj9QT7P6zIbx1+WgtpKg==
   dependencies:
     "@grpc/grpc-js" "1.8.1"
     "@opentelemetry/api" "^1.4.1"

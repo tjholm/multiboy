@@ -4,7 +4,7 @@
   "description": "nitric typescript starter template",
   "private": true,
   "dependencies": {
-    "@nitric/sdk": "v0.15.0-rc.5",
+    "@nitric/sdk": "v0.15.0",
     "express": "^4.18.2",
     "short-uuid": "^4.2.2",
     "unique-username-generator": "^1.1.3"
