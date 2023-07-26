@@ -37,6 +37,9 @@ To run the project locally you can simply run `yarn dev`. If you have any issues
 ## Deployment
 
 ### Requirements
+  - [Nitric CLI](https://nitric.io/docs/guides/getting-started/installation)
+  - Node.js
+  - yarn
   - Pulumi
 
 If you have AWS credentials and Pulumi configured on your machine, you should simply be able to run `yarn deploy`.
