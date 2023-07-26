@@ -8,8 +8,8 @@ const CONTROL_LEGEND: Record<keyof InputState, [string, string]> = {
     isPressingUp: ['up', 'up arrow'],
     isPressingLeft: ['left', 'left arrow'],
     isPressingRight: ['right', 'right arrow'],
-    isPressingA: ['a', 'a'],
-    isPressingB: ['b', 'b'],
+    isPressingA: ['a', 'z'],
+    isPressingB: ['b', 'x'],
     isPressingSelect: ['select', 'right ctrl'],
     isPressingStart: ['start', 'enter'],
 }

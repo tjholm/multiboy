@@ -3,8 +3,8 @@ const UP = 'ArrowUp';
 const LEFT = 'ArrowLeft';
 const RIGHT = 'ArrowRight';
 
-const A = 'KeyA';
-const B = 'KeyB';
+const A = 'KeyZ';
+const B = 'KeyX';
 
 const START = 'Enter';
 const SELECT = 'ControlRight';
