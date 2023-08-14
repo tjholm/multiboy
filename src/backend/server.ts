@@ -30,7 +30,7 @@ app.get("/address", async (req, res) => {
 });
 
 // create a new game (should be a POST but being lazy...)
-app.get("/game", async (req, res) => {
+app.post("/game", async (req, res) => {
     // generate a unique random name for the game
     const gameName = generateUsername('-')
 
@@ -49,20 +49,6 @@ app.get("/game", async (req, res) => {
         guestToken,
         hostToken,
     }).send();
-});
-
-// join an existing game
-app.get("/join/:game", async (req, res) => {
-    // create the new game and redirect to the host portal
-    const token = req.query.token;
-    
-    if (!token) {
-        res.status(400).send("missing token");
-        return
-    }
-
-    // redirect with params (these will be used by the websocket connection)
-    res.redirect(`/guest?game=${req.params.game}&token=${token}`)
 });
 
 http(app);

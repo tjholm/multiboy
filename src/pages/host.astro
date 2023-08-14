@@ -68,7 +68,9 @@ import Countdown from "../components/Countdown";
   const gameboy = new Gameboy();
 
   (async function () {
-    const game = await fetch("/game");
+    const game = await fetch("/game", {
+      method: "POST",
+    });
     const addressResp = await fetch("/address");
 
     const urlParams = new URLSearchParams(window.location.search);
