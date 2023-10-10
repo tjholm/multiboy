@@ -4,12 +4,6 @@ A multiplayer gameboy powered by WebRTC and [Nitric](https://nitric.io/).
 
 > The emulator used in this project was not authored by me and is located [here](https://github.com/roblouie/gameboy-emulator). Have made minor tweaks to it for streaming audio.
 
-Demo available [here](https://multiboy.nitric.rocks)
-
-> Apologies if the demo is down, if you're interested in trying it out let me know in issues or you can also run it on your local machine or deploy it to your own AWS account.
-
-This is still very much a work in progress, if it's not working for you feel free to raise an issue :).
-
 NOTE: All WebRTC communication is Peer to peer with no relays (TURN servers). If you have any issues connecting to a peer it is likely that a TURN server will be required.
 
 ## Game Modes
