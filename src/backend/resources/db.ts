@@ -1,4 +1,10 @@
-import { collection } from '@nitric/sdk';
+import { kv } from '@nitric/sdk';
+
+// define available key permutations
+// game|<gameName> -> Game
+// guest|<connectionId> -> GuestConnection
+// host|<connectionId> -> HostConnection
+// game|<gameName>|guest|<connectionId> -> GuestGameConnection
 
 export interface Game {
     // The connection ID of the host
@@ -13,4 +19,10 @@ export interface GuestConnection {
     game: string;
 }
 
-export const db = collection<Game | GuestConnection>('db');
+export interface GuestGameConnection {}
+
+export interface HostConnection {
+    game: string;
+}
+
+export const db = kv<Game | GuestConnection | HostConnection>('db');

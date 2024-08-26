@@ -1,6 +1,5 @@
 name: nitric-gameboy-ws
 handlers:
-  - src/backend/*.ts
-preview-features:
-  - websockets
-  - http
+  - match: src/backend/*.ts
+    start: npm run dev:services $SERVICE_PATH
+

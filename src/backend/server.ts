@@ -8,7 +8,7 @@ import signal from "./resources/signal";
 const MAX_AGE = process.env.MAX_AGE || 3600000;
 
 // Store connections for transmitting data
-const gamesdb = db.for('reading', 'writing', 'deleting');
+const gamesdb = db.allow('get', 'set', 'delete');
 
 const app = express();
 
@@ -39,7 +39,7 @@ app.post("/game", async (req, res) => {
     const guestToken = short.generate();
 
     // create the new game and redirect to the host portal
-    await gamesdb.doc(`game|${gameName}`).set({
+    await gamesdb.set(`game|${gameName}`, {
         guestToken,
         hostToken,
     });

@@ -1,8 +1,8 @@
 import signal from './resources/signal';
-import { Game, GuestConnection, db } from './resources/db';
+import { Game, GuestConnection, GuestGameConnection, HostConnection, db } from './resources/db';
 
 // Store connections for transmitting data
-const gamesdb = db.for('reading', 'writing', 'deleting');
+const gamesdb = db.allow('get', 'set', 'delete');
 
 const encoder = new TextEncoder();
 
@@ -13,22 +13,25 @@ signal.on('connect', async (ctx) => {
 
     try {
         // get the game
-        const game = await gamesdb.doc(`game|${gameName}`).get() as Game;
+        const game = await gamesdb.get(`game|${gameName}`) as Game;
 
         if (game && token === game.hostToken) {
             // connect the host
             console.log('connecting a host');
             if (!game.hostConnectionId) {
                 game.hostConnectionId = ctx.req.connectionId;
-                // update the game
+
+                // Create a document for the game host
+                await gamesdb.set(`host|${ctx.req.connectionId}`, {
+                    game: gameName,
+                });
             } else {
                 throw new Error('this game is already being hosted!!!')
             }
-            
         } else if (game && token === game.guestToken) {
             console.log('connecting a guest');
             // create a guest connection in the DB and associate it with this game
-            await gamesdb.doc(`connection|${ctx.req.connectionId}`).set({
+            await gamesdb.set(`guest|${ctx.req.connectionId}`, {
                 game: gameName,
             });
         } else {
@@ -36,7 +39,7 @@ signal.on('connect', async (ctx) => {
             throw new Error("Failed Authentication");
         }
 
-        await gamesdb.doc(`game|${gameName}`).set(game);
+        await gamesdb.set(`game|${gameName}`, game);
         
     } catch (e) {
         console.log(`error getting game: ${gameName}: ${e.message}`)
@@ -48,41 +51,38 @@ signal.on('connect', async (ctx) => {
 });
 
 signal.on('disconnect', async (ctx) => {
-    const resp = await gamesdb.query().where('hostConnectionId', '==', ctx.req.connectionId).limit(1).fetch();
-    if(resp.documents.length > 0) {
-        const document = resp.documents[0];
-        const gameName = document.id.split('|')[1];
-        // we know they're a game host
-        // delete the game and connected clients
-        const connections = gamesdb.query().where('game', '==', gameName).stream();
+    // if they are a game host
+    // we want to delete the game and connected clients
+    const host = await gamesdb.get(`host|${ctx.req.connectionId}`).catch(null) as HostConnection | null;
 
-        // close the client connection
-        const streamPromise = new Promise<any>(res => {
-            connections.on('end', res);
-        });
+    if (host) {
+        // disconnect the guests
+        const guestGameConnectionKeyPrefix = `game|${host.game}|guest|`;
+        // Send a message to each guest
+        const guestKeys = gamesdb.keys(guestGameConnectionKeyPrefix);
+        // for each guest connection send the message
+        for await (const key of guestKeys) {
+            const guestConnectionId = key.replace(guestGameConnectionKeyPrefix, '');
 
-        connections.on('data', async (data) => {
-            const connectionId = data.id.split('|')[1];
-            // tell the clients the stream is over
-            await signal.close(connectionId);
-        });
+            // send the message to the guest
+            await signal.close(guestConnectionId);
+        }
 
-        await streamPromise;
+        await gamesdb.delete(`game|${host.game}`);
+        await gamesdb.delete(`host|${ctx.req.connectionId}`);
 
-        // delete the game
-        console.log('disconnecting host');
-        await gamesdb.doc(document.id).delete();
-        
-        return ctx;
+        return  ctx;
     }
 
-    // remove the client from the client connection pool
     console.log('disconnecting guest');
-    await gamesdb.doc(`connection|${ctx.req.connectionId}`).delete();
+    const guestConnection = await gamesdb.get(`guest|${ctx.req.connectionId}`) as GuestConnection;
+
+    await gamesdb.delete(`guest|${ctx.req.connectionId}`);
+    await gamesdb.delete(`game|${guestConnection.game}|guest|${ctx.req.connectionId}`);
 });
 
 const sendHost = async (gameName: string, data: Record<string, any>) => {
-    const game = await gamesdb.doc(`game|${gameName}`).get() as Game;
+    const game = await gamesdb.get(`game|${gameName}`) as Game;
 
     const streamData = encoder.encode(JSON.stringify(data));
 
@@ -92,28 +92,29 @@ const sendHost = async (gameName: string, data: Record<string, any>) => {
 signal.on('message', async (ctx) => {
     // if they are a game host
     // we want to relay their messages to the intended guest
-    const resp = await gamesdb.query().where('hostConnectionId', '==', ctx.req.connectionId).limit(1).fetch();
-    if(resp.documents.length > 0) {
-        // responses are for handshakes with guests so should contain the guests original connection ID
-        // we'll use this to respond directly to them
-        const msg = ctx.req.json();
-        if (!msg.connectionId) {
-            ctx.res.success = false;
-            return ctx
+    try {
+        const resp = await gamesdb.get(`host|${ctx.req.connectionId}`) as HostConnection;
+
+        const guestGameConnectionKeyPrefix = `game|${resp.game}|guest|`;
+        // Send a message to each guest
+        const guestKeys = gamesdb.keys(guestGameConnectionKeyPrefix);
+        // for each guest connection send the message
+        for await (const key of guestKeys) {
+            const guestConnectionId = key.replace(guestGameConnectionKeyPrefix, '');
+
+            // send the message to the guest
+            await signal.send(guestConnectionId, ctx.req.data);
         }
-
-        await signal.send(msg.connectionId, ctx.req.data);
-
-        return ctx;
+    } catch (e) {
+        // if they are not a host, they are a guest
+        // we want to relay their message to the host
+        // TODO: Only do on not found error
+        const connection = await gamesdb.get(`guest|${ctx.req.connectionId}`) as GuestConnection;
+        const data = ctx.req.json();
+        
+        await sendHost(connection.game, {
+            connectionId: ctx.req.connectionId,
+            ...data,
+        });
     }
-
-    // otherwise they are a guest
-    // we want to relay their message to the host
-    const connection = await gamesdb.doc(`connection|${ctx.req.connectionId}`).get() as GuestConnection;
-    const data = ctx.req.json();
-    
-    await sendHost(connection.game, {
-        connectionId: ctx.req.connectionId,
-        ...data,
-    });
 });
