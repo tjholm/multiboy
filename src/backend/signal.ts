@@ -34,6 +34,7 @@ signal.on('connect', async (ctx) => {
             await gamesdb.set(`guest|${ctx.req.connectionId}`, {
                 game: gameName,
             });
+            await gamesdb.set(`game|${gameName}|guest|${ctx.req.connectionId}`, {});
         } else {
             // fail the connection
             throw new Error("Failed Authentication");

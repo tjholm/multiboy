@@ -67,7 +67,9 @@ import Countdown from "../components/Countdown";
   // bind to websocket with host token
   const gameboy = new Gameboy();
 
+  console.log("starting function");
   (async function () {
+    console.log("fetching game");
     const game = await fetch("/game", {
       method: "POST",
     });
@@ -178,9 +180,11 @@ import Countdown from "../components/Countdown";
       });
     });
 
+    console.log("starting hub")
     hub.start();
 
     guestUrl.addEventListener("click", () => {
+      console.log("copying guest url", `${window.location.protocol}//${window.location.host}/guest?game=${resp.name}&token=${resp.guestToken}`);
       navigator.clipboard.writeText(
         `${window.location.protocol}//${window.location.host}/guest?game=${resp.name}&token=${resp.guestToken}`
       );

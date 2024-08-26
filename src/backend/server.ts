@@ -18,7 +18,7 @@ app.use((req, res, next) => {
     next();
 });
 // host static assets
-app.use(express.static('./public', { maxAge: MAX_AGE }));
+app.use(express.static('./out', { maxAge: MAX_AGE }));
 
 // use express json middleware
 app.use(express.json());

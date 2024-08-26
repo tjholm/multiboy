@@ -25,4 +25,4 @@ export interface HostConnection {
     game: string;
 }
 
-export const db = kv<Game | GuestConnection | HostConnection>('db');
+export const db = kv<Game | GuestConnection | HostConnection | GuestGameConnection>('db');

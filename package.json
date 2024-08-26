@@ -40,8 +40,7 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "dev:functions": "nodemon -e json,js,ts,astro,tsx --ignore 'public/*' --exec 'yarn build && ts-node -r dotenv/config ./index.ts'",
-    "dev": "stmux -w always -e ERROR -M -m beep,system -- [ -t 'Nitric: Exit using ctrl^a+k' \"nitric start\" .. -t 'Functions' \"wait-port localhost:50051 && npm run dev:functions\" ]",
+    "dev:services": "nodemon -r dotenv/config",
     "deploy": "yarn build && nitric up -v2",
     "build": "astro build"
   }
