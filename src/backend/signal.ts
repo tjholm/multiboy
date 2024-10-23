@@ -1,10 +1,12 @@
 import signal from './resources/signal';
-import { Game, GuestConnection, GuestGameConnection, HostConnection, db } from './resources/db';
+import { Game, GuestConnection, HostConnection, db } from './resources/db';
 
 // Store connections for transmitting data
 const gamesdb = db.allow('get', 'set', 'delete');
 
 const encoder = new TextEncoder();
+
+
 
 signal.on('connect', async (ctx) => {
     // get the guest or host query params
