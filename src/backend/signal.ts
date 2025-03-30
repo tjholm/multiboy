@@ -1,14 +1,38 @@
 import signal from './resources/signal';
+import game from './resources/api';
+import { generateUsername } from "unique-username-generator";
 import { Game, GuestConnection, HostConnection, db } from './resources/db';
+import short from 'short-uuid';
 
 // Store connections for transmitting data
 const gamesdb = db.allow('get', 'set', 'delete');
 
 const encoder = new TextEncoder();
 
+game.post("/game", async (ctx) => {
+    // generate a unique random name for the game
+    const gameName = generateUsername('-')
 
+    // generate host and guest tokens for authentication
+    const hostToken = short.generate();
+    const guestToken = short.generate();
+
+    // create the new game and redirect to the host portal
+    await gamesdb.set(`game|${gameName}`, {
+        guestToken,
+        hostToken,
+    });
+
+    ctx.res.status  = 201;
+    ctx.res.json({
+        name: gameName,
+        guestToken,
+        hostToken,
+    })
+});
 
 signal.on('connect', async (ctx) => {
+    console.log('connecting a client', ctx.req.query);
     // get the guest or host query params
     const [ gameName ] = ctx.req.query['game'];
     const [ token ] = ctx.req.query['token'];

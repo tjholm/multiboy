@@ -70,10 +70,10 @@ import Countdown from "../components/Countdown";
   console.log("starting function");
   (async function () {
     console.log("fetching game");
-    const game = await fetch("/game", {
+    const game = await fetch("/api/game/game", {
       method: "POST",
     });
-    const addressResp = await fetch("/address");
+    // const addressResp = await fetch("/address");
 
     const urlParams = new URLSearchParams(window.location.search);
     const gameMode = urlParams.get("mode") || "chaos";
@@ -83,12 +83,12 @@ import Countdown from "../components/Countdown";
     // establish the initial game type, if mode is invalid then will use configued default
     gameState.set(DEFAULT_STATES[gameMode] || DEFAULT_STATES.default);
 
-    const address = await addressResp.text();
+    // const address = await addressResp.text();
     const resp = await game.json();
 
     // connect the websocket as the game host
     const websocket = new WebSocket(
-      `${address}?game=${resp.name}&token=${resp.hostToken}`
+      `/ws/signal?game=${resp.name}&token=${resp.hostToken}`
     );
 
     // disable gameboy keyboard manager

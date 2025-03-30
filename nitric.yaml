@@ -2,4 +2,25 @@ name: nitric-gameboy-ws
 services:
   - match: src/backend/*.ts
     start: npm run dev:services $SERVICE_PATH
+    runtime: node
 
+runtimes:
+  node:
+    dockerfile: ./node.dockerfile
+    context: ""
+    args: {}
+
+websites:
+  - basedir: ./frontend
+    # path defaults to /
+    build:
+      command: npm run build
+      output: ./out
+    dev:
+      command: npm run dev -- --port 4322
+      url: http://localhost:4322
+    error: 404.html
+
+preview:
+  - websites
+  - beta-providers

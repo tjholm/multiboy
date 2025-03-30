@@ -1,0 +1,12 @@
+.nitric/
+.git/ 
+.idea/ 
+.vscode/ 
+.github/ 
+*.dockerfile 
+*.dockerignore
+node_modules/
+README.md
+astro-website/
+vue-project/
+cdktf.out/

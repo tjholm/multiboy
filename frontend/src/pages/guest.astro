@@ -57,17 +57,13 @@ import { countdown } from "../stores/countdown";
   };
 
   (async function () {
-    // TODO: Return in game fetch?
-    const addressResp = await fetch("/address");
-    const address = await addressResp.text();
-
     const urlParams = new URLSearchParams(window.location.search);
     const gameName = urlParams.get("game");
     const token = urlParams.get("token");
 
     // connect the websocket as a game guest
     const websocket = new WebSocket(
-      `${address}?game=${gameName}&token=${token}`
+      `/ws/signal?game=${gameName}&token=${token}`
     );
 
     await new Promise((res) => {
