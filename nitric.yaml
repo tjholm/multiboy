@@ -1,6 +1,6 @@
 name: nitric-gameboy-ws
 services:
-  - match: src/backend/*.ts
+  - match: backend/*.ts
     start: npm run dev:services $SERVICE_PATH
     runtime: node
 
