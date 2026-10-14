@@ -42,6 +42,7 @@
   "scripts": {
     "dev:services": "nodemon -r dotenv/config",
     "deploy": "yarn build && nitric up -v2",
-    "build": "astro build"
+    "build": "astro build",
+    "test": "node -r ts-node/register --test test/*.test.cjs"
   }
 }

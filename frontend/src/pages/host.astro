@@ -51,6 +51,7 @@ import Countdown from "../components/Countdown";
   import { Gameboy } from "@tholm/gameboy-emulator";
   import km from "../lib/input-manager";
   import Hub from "../lib/hub";
+  import { activeInputs } from "../lib/active-inputs";
   import localforage from "localforage";
   import { fileToArrayBuffer, shuffle } from '../lib/utils';
 
@@ -193,7 +194,7 @@ import Countdown from "../components/Countdown";
     fileInput.addEventListener("change", onFileChange);
 
     setInterval(() => {
-      const newInputs = strategy.get()({ host: km.input, ...inputState });
+      const newInputs = strategy.get()(activeInputs(km.input, inputState, hub.guests));
 
       // apply the held buttons to the emulator
       Object.entries(newInputs).forEach(([k, v]) => {
